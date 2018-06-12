@@ -8,5 +8,10 @@ CFLAGS += -save-temps
 
 include $(IDF_PATH)/make/project.mk
 
+SERVER_HOST = bj.com
+SERVER_PORT = 4000
+SERVER_PATH = ~/subdomains/smartplant/esp32/
+
 upload:
-	scp build/esp32-ota-https.bin andreas@www.classycode.com:/data/httpd/classycode.io/esp32
+	scp -P $(SERVER_PORT) build/esp32-ota-https.bin $(SERVER_HOST):$(SERVER_PATH)
+	scp -P $(SERVER_PORT) meta/ota.txt $(SERVER_HOST):$(SERVER_PATH)
