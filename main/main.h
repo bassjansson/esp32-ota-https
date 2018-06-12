@@ -30,7 +30,7 @@
 
 // Used by the OTA module to check if the current version is different from the version
 // on the server, i.e. if an upgrade or downgrade should be performed.
-#define SOFTWARE_VERSION          1
+#define SOFTWARE_VERSION          2
 
 // Provide the network name and password of your WIFI network.
 #define WIFI_NETWORK_SSID         "VGV7519684538"

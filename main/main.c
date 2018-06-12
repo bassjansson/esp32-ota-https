@@ -54,14 +54,14 @@ void app_main()
     ESP_LOGI(TAG, "---------- Intialization started ----------");
     ESP_LOGI(TAG, "---------- Software version: %2d -----------", SOFTWARE_VERSION);
 
-    
+
     nvs_flash_init();
-    
-    
+
+
     // Configure the application event handler.
     // The handler is centrally implemented in this module.
     // From here, we delegate the event handling to the responsible modules.
-    
+
     esp_event_loop_init(&app_event_handler, NULL);
 
 
@@ -69,12 +69,12 @@ void app_main()
     // defined access point.
 
     init_wifi();
-    
-    
+
+
     // Configure the over-the-air update module. This module periodically checks
     // for firmware updates by polling a web server. If an update is available,
     // the module downloads and installs it.
-    
+
     init_ota();
 
 
@@ -82,24 +82,28 @@ void app_main()
     // It just lets an LED blink. You may need to adapt this for your own module
     // (GPIO5 is the blue LED on the "ESP32 Thing" module.)
 
-    gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT);
-    while (1) {
-        
-        int nofFlashes = 1;
-        if (wifi_sta_is_connected()) {
-            nofFlashes += 1;
+    gpio_set_direction(GPIO_NUM_22, GPIO_MODE_OUTPUT);
+
+    while (true)
+    {
+        int interval = 1000;
+
+        if (wifi_sta_is_connected())
+            interval = 250;
+
+        if (iap_https_update_in_progress())
+            interval = 100;
+
+        int nofFlashes = 1000 / interval;
+
+        for (int i = 0; i < nofFlashes; ++i)
+        {
+            gpio_set_level(GPIO_NUM_22, 1);
+            vTaskDelay(interval / portTICK_PERIOD_MS);
+            gpio_set_level(GPIO_NUM_22, 0);
+            vTaskDelay(interval / portTICK_PERIOD_MS);
         }
-        if (iap_https_update_in_progress()) {
-            nofFlashes += 2; // results in 3 (not connected) or 4 (connected) flashes
-        }
-        
-        for (int i = 0; i < nofFlashes; i++) {
-            gpio_set_level(GPIO_NUM_5, 1);
-            vTaskDelay(150 / portTICK_PERIOD_MS);
-            gpio_set_level(GPIO_NUM_5, 0);
-            vTaskDelay(150 / portTICK_PERIOD_MS);
-        }
-        
+
         // If the application could only re-boot at certain points, you could
         // manually query iap_https_new_firmware_installed and manually trigger
         // the re-boot. What we do in this example is to let the firmware updater
@@ -109,27 +113,27 @@ void app_main()
         //     ESP_LOGI(TAG, "New firmware has been installed - rebooting...");
         //     esp_restart();
         // }
-        
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
-    
+
     // Should never arrive here.
 }
 
 static void init_wifi()
 {
     ESP_LOGI(TAG, "Set up WIFI network connection.");
-    
+
     wifi_params.network_ssid = WIFI_NETWORK_SSID;
     wifi_params.network_password = WIFI_NETWORK_PASSWORD;
-    
+
     wifi_sta_init(&wifi_params);
 }
 
 static void init_ota()
 {
     ESP_LOGI(TAG, "Initialising OTA firmware updating.");
-    
+
     ota_config.current_software_version = SOFTWARE_VERSION;
     ota_config.server_host_name = OTA_SERVER_HOST_NAME;
     ota_config.server_port = "443";
@@ -139,9 +143,9 @@ static void init_ota()
     ota_config.peer_public_key_pem = peer_public_key_pem;
     ota_config.polling_interval_s = OTA_POLLING_INTERVAL_S;
     ota_config.auto_reboot = OTA_AUTO_REBOOT;
-    
+
     iap_https_init(&ota_config);
-    
+
     // Immediately check if there's a new firmware image available.
     iap_https_check_now();
 }
@@ -150,18 +154,18 @@ static esp_err_t app_event_handler(void *ctx, system_event_t *event)
 {
     esp_err_t result = ESP_OK;
     int handled = 0;
-    
+
     ESP_LOGI(TAG, "app_event_handler: event: %d", event->event_id);
 
     // Let the wifi_sta module handle all WIFI STA events.
-    
+
     result = wifi_sta_handle_event(ctx, event, &handled);
     if (ESP_OK != result || handled) {
         return result;
     }
-    
+
     // TODO - handle other events
-    
+
     ESP_LOGW(TAG, "app_event_handler: unhandled event: %d", event->event_id);
     return ESP_OK;
 }
